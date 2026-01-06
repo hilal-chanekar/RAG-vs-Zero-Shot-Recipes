@@ -1,15 +1,18 @@
 import json
+import torch
 from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
 
 DATA_PATH = Path("data/recipes.json")
+EMBEDDINGS_CACHE_PATH = Path("data/embeddings_cache.pt")
 
 class RecipeRetriever:
-    def __init__(self, data_path=DATA_PATH):
+    def __init__(self, data_path=DATA_PATH, cache_path=EMBEDDINGS_CACHE_PATH):
         with open(data_path, "r") as f:
             data = json.load(f)
 
         self.recipes = data["recipes"]
+        self.cache_path = cache_path
 
         # normalize ingredients and steps
         for r in self.recipes:
@@ -29,8 +32,24 @@ class RecipeRetriever:
             )
             self.documents.append(text)
 
-        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-        self.doc_embeddings = self.model.encode(self.documents, convert_to_tensor=True)
+        self.model = SentenceTransformer('Alibaba-NLP/gte-large-en-v1.5', trust_remote_code=True)
+        self.doc_embeddings = self._load_or_compute_embeddings()
+
+    def _load_or_compute_embeddings(self):
+        """Load cached embeddings or compute and cache them."""
+        if self.cache_path.exists():
+            print("Loading cached embeddings...")
+            return torch.load(self.cache_path)
+        
+        print("Computing embeddings (this may take a while)...")
+        embeddings = self.model.encode(self.documents, convert_to_tensor=True)
+        
+        # Ensure cache directory exists
+        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(embeddings, self.cache_path)
+        print(f"Embeddings cached to {self.cache_path}")
+        
+        return embeddings
 
     def retrieve(self, query, k=1):
         """

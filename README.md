@@ -31,11 +31,12 @@ data/recipes.json → retrieval/recipe_retriever.py → generation/{zero_shot,fe
 ```
 
 1. **Case Base** (`data/recipes.json`): Ground-truth recipes extracted from Recipes1M dataset
-2. **Retriever** (`retrieval/recipe_retriever.py`): Uses `sentence-transformers/all-MiniLM-L6-v2` for semantic similarity search
+2. **Retriever** (`retrieval/recipe_retriever.py`): Uses `Alibaba-NLP/gte-large-en-v1.5` for semantic similarity search with embedding caching
 3. **Generation**: Two conditions:
    - `zero_shot.py`: LLM generates from internal knowledge only
    - `few_shot_RAG.py`: LLM gets k=1 similar recipe as context
 4. **Results**: JSON files with prompts, outputs, and metadata
+5. **Embeddings Cache** (`data/embeddings_cache.pt`): Precomputed document embeddings for faster retrieval
 
 ## Key Patterns
 

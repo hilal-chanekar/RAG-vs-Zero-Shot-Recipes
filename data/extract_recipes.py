@@ -11,7 +11,7 @@ RANDOM_SEED = 42
 # Recipes will be sampled proportionally from each category
 CATEGORIES = {
     "chicken": ["chicken", "poultry"],
-    "beef": ["beef", "steak", "burger"],
+    "beef": ["beef", "steak"],
     "pork": ["pork", "bacon", "ham", "sausage"],
     "seafood": ["fish", "salmon", "shrimp", "tuna", "seafood", "crab", "lobster"],
     "vegetarian": ["vegetable", "veggie", "vegan", "tofu", "lentil", "bean"],
