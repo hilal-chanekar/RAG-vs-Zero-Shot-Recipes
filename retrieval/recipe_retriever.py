@@ -1,0 +1,70 @@
+import json
+from pathlib import Path
+from sentence_transformers import SentenceTransformer, util
+
+DATA_PATH = Path("data/recipes.json")
+
+class RecipeRetriever:
+    def __init__(self, data_path=DATA_PATH):
+        with open(data_path, "r") as f:
+            data = json.load(f)
+
+        self.recipes = data["recipes"]
+
+        # normalize ingredients and steps
+        for r in self.recipes:
+            if isinstance(r.get("ingredients"), str):
+                r["ingredients"] = json.loads(r["ingredients"])
+
+            if isinstance(r.get("steps"), str):
+                r["steps"] = json.loads(r["steps"])
+
+        # Build searchable documents
+        self.documents = []
+        for r in self.recipes:
+            text = (
+                r.get("dish_name", "") + " "
+                + " ".join(r.get("ingredients", [])) + " "
+                + " ".join(r.get("steps", []))
+            )
+            self.documents.append(text)
+
+        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        self.doc_embeddings = self.model.encode(self.documents, convert_to_tensor=True)
+
+    def retrieve(self, query, k=1):
+        """
+        Returns the k most similar recipes as tuples of (formatted_string, dish_id, dish_name)
+        suitable for prompt injection.
+        """
+
+        query_embedding = self.model.encode(query, convert_to_tensor=True)
+
+        scores = util.cos_sim(query_embedding, self.doc_embeddings)[0]
+
+        best_indices = scores.argsort(descending=True)[:k].cpu().numpy()
+        recipes = [self.recipes[i] for i in best_indices]
+
+        return [
+            (self.format_recipe(r), r.get("dish_id", ""), r.get("dish_name", ""))
+            for r in recipes
+        ]
+
+    def format_recipe(self, recipe):
+        """
+        Converts a recipe dict into a readable text block
+        for inclusion in the prompt.
+        """
+        ingredients = recipe.get("ingredients", [])
+        steps = recipe.get("steps", [])
+
+        ingredients_text = "\n".join(f"- {i}" for i in ingredients)
+        steps_text = "\n".join(f"{idx+1}. {s}" for idx, s in enumerate(steps))
+
+        formatted = (
+            f"Dish Name: {recipe.get('dish_name', '')}\n"
+            f"Ingredients:\n{ingredients_text}\n"
+            f"Steps:\n{steps_text}"
+        )
+
+        return formatted
