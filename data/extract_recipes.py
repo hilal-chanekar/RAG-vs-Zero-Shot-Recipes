@@ -114,7 +114,7 @@ def main():
     # Filter for quality
     quality_df = filter_quality_recipes(dataset)
     print(f"Quality filtered recipes with 4-20 ingredients and 3-15 steps: {len(quality_df)}")
-    
+
     # Sample diverse recipes
     sampled_df = sample_diverse_recipes(quality_df, TOTAL_RECIPES)
     print(f"\nTotal sampled recipes: {len(sampled_df)}")
